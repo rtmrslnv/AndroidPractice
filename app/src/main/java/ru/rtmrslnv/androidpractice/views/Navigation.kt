@@ -52,9 +52,13 @@ fun Navigation(navController: NavHostController, viewModel: JobInfoViewModel) {
                 type = NavType.IntType
             })
         ) { backStackEntry ->
-            val item = viewModel.jobInfos.value.find { it.id == backStackEntry.arguments?.getInt("itemId") };
-            if (item != null) {
-                JobInfoView(navController, item)
+            val id = backStackEntry.arguments?.getInt("itemId");
+            if (id != null)
+            {
+                val item = viewModel.findJobInfo(id);
+                if (item != null) {
+                    JobInfoView(navController, item)
+                }
             }
         }
     }
@@ -116,7 +120,7 @@ fun MainScreen(viewModel: JobInfoViewModel) {
                         launchSingleTop = true
                     }
                 },
-                barColor = Color(255, 163, 26)
+                barColor = MaterialTheme.colorScheme.primary
             )
         }
     ) { innerPadding ->

@@ -3,17 +3,12 @@ package ru.rtmrslnv.androidpractice.views
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
-import androidx.compose.foundation.layout.fillMaxHeight
-import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
-import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
-import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.filled.AccountBox
 import androidx.compose.material3.Card
 import androidx.compose.material3.Icon
 import androidx.compose.material3.MaterialTheme
@@ -22,13 +17,11 @@ import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.draw.scale
-import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import androidx.navigation.NavController
-import ru.rtmrslnv.androidpractice.models.JobInfo
+import ru.rtmrslnv.androidpractice.models.JobInfoUI
 import ru.rtmrslnv.androidpractice.ui.theme.AndroidPracticeTheme
 import ru.rtmrslnv.androidpractice.viewmodels.JobInfoViewModel
 
@@ -56,7 +49,7 @@ fun MainView(navController: NavController, jobInfoViewModel: JobInfoViewModel) {
 }
 
 @Composable
-fun JobCard(modifier: Modifier = Modifier, jobInfo: JobInfo, onClick: (JobInfo) -> Unit) {
+fun JobCard(modifier: Modifier = Modifier, jobInfo: JobInfoUI, onClick: (JobInfoUI) -> Unit) {
     Card(modifier = modifier, onClick = { onClick(jobInfo) }) {
         Row(
             modifier = Modifier.padding(8.dp),
@@ -65,8 +58,7 @@ fun JobCard(modifier: Modifier = Modifier, jobInfo: JobInfo, onClick: (JobInfo) 
         ) {
             Icon(
                 modifier = Modifier.size(48.dp),
-                // TODO: load jobInfo.companyLogoUrl
-                imageVector = Icons.Default.AccountBox,
+                imageVector = jobInfo.companyLogo,
                 contentDescription = jobInfo.companyName
             )
             Column(modifier = Modifier
@@ -77,8 +69,7 @@ fun JobCard(modifier: Modifier = Modifier, jobInfo: JobInfo, onClick: (JobInfo) 
                     text = jobInfo.title,
                     overflow = TextOverflow.Ellipsis,
                     style = MaterialTheme.typography.titleMedium,
-                    fontWeight = FontWeight.ExtraBold,
-                    color = Color(27,27,27)
+                    fontWeight = FontWeight.ExtraBold
                 )
                 Row(
                     modifier = Modifier.fillMaxWidth(),
@@ -89,17 +80,15 @@ fun JobCard(modifier: Modifier = Modifier, jobInfo: JobInfo, onClick: (JobInfo) 
                         modifier = Modifier.height(24.dp),
                         text = jobInfo.companyName,
                         overflow = TextOverflow.Ellipsis,
-                        style = MaterialTheme.typography.titleSmall,
-                        color = Color(41,41,41)
+                        style = MaterialTheme.typography.titleSmall
                     )
 
-                    val salary = if (jobInfo.minSalary != null) "${jobInfo.minSalary} - ${jobInfo.maxSalary} ${jobInfo.currency}" else "N/A"
                     Text(
                         modifier = Modifier.height(24.dp),
-                        text = salary,
+                        text = jobInfo.salary,
                         overflow = TextOverflow.Ellipsis,
                         style = MaterialTheme.typography.titleSmall,
-                        color = if (salary != "N/A") Color(255,163,26) else Color(128,128,128)
+                        color = if (jobInfo.hasSalary) MaterialTheme.colorScheme.primary else MaterialTheme.colorScheme.secondary
                     )
                 }
             }

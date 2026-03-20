@@ -11,7 +11,6 @@ import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.filled.AccountBox
 import androidx.compose.material.icons.filled.ArrowBack
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.Icon
@@ -23,20 +22,17 @@ import androidx.compose.material3.TopAppBar
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.graphics.Color
-import androidx.compose.ui.text.AnnotatedString
 import androidx.compose.ui.text.font.FontWeight
-import androidx.compose.ui.text.fromHtml
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import androidx.navigation.NavHostController
-import ru.rtmrslnv.androidpractice.models.JobInfo
+import ru.rtmrslnv.androidpractice.models.JobInfoUI
 import ru.rtmrslnv.androidpractice.ui.theme.AndroidPracticeTheme
 
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
-fun JobInfoView(navController: NavHostController, jobInfo: JobInfo) {
+fun JobInfoView(navController: NavHostController, jobInfo: JobInfoUI) {
     AndroidPracticeTheme() {
         Scaffold(
             modifier = Modifier.fillMaxWidth(),
@@ -64,11 +60,12 @@ fun JobInfoView(navController: NavHostController, jobInfo: JobInfo) {
             }
         ) { innerPadding ->
             Column(modifier = Modifier.padding(innerPadding)
-                                        .padding(8.dp)) {
+                                        .padding(8.dp)
+                                        .verticalScroll(rememberScrollState())) {
                 Row(verticalAlignment = Alignment.CenterVertically) {
                     Icon(
                         modifier = Modifier.size(64.dp),
-                        imageVector = Icons.Default.AccountBox,
+                        imageVector = jobInfo.companyLogo,
                         contentDescription = null
                     )
                     Text(
@@ -121,7 +118,6 @@ fun JobInfoView(navController: NavHostController, jobInfo: JobInfo) {
                     )
                 }
 
-                val salary = if (jobInfo.minSalary != null) "${jobInfo.minSalary} - ${jobInfo.maxSalary} ${jobInfo.currency}" else "N/A"
                 Row(
                     modifier = Modifier.fillMaxWidth().padding(top = 8.dp),
                     verticalAlignment = Alignment.CenterVertically,
@@ -134,11 +130,11 @@ fun JobInfoView(navController: NavHostController, jobInfo: JobInfo) {
                         fontWeight = FontWeight.ExtraBold
                     )
                     Text(
-                        text = salary,
+                        text = jobInfo.salary,
                         overflow = TextOverflow.Ellipsis,
                         style = MaterialTheme.typography.bodyLarge,
                         fontWeight = FontWeight.ExtraBold,
-                        color = if (jobInfo.minSalary != null) Color.Green else MaterialTheme.typography.bodyLarge.color
+                        color = if (jobInfo.hasSalary) MaterialTheme.colorScheme.primary else MaterialTheme.colorScheme.secondary
                     )
                 }
 
@@ -149,8 +145,8 @@ fun JobInfoView(navController: NavHostController, jobInfo: JobInfo) {
                     fontWeight = FontWeight.ExtraBold
                 )
                 Text(
-                    modifier = Modifier.verticalScroll(rememberScrollState()),
-                    text = AnnotatedString.fromHtml(jobInfo.description)
+                    modifier = Modifier.fillMaxWidth().padding(top = 8.dp),
+                    text = jobInfo.description
                 )
             }
         }
