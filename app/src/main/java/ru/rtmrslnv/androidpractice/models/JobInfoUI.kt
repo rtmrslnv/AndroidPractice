@@ -1,5 +1,6 @@
 package ru.rtmrslnv.androidpractice.models
 
+import androidx.compose.ui.graphics.ImageBitmap
 import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.text.AnnotatedString
 
@@ -12,5 +13,5 @@ data class JobInfoUI(
     var hasSalary: Boolean,
     var currency: String,
     var description: AnnotatedString,
-    var companyLogo: ImageVector
+    var companyLogo: ImageBitmap
 )

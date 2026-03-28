@@ -1,5 +1,6 @@
 package ru.rtmrslnv.androidpractice.views
 
+import androidx.compose.foundation.Image
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
@@ -63,9 +64,9 @@ fun JobInfoView(navController: NavHostController, jobInfo: JobInfoUI) {
                                         .padding(8.dp)
                                         .verticalScroll(rememberScrollState())) {
                 Row(verticalAlignment = Alignment.CenterVertically) {
-                    Icon(
+                    Image(
                         modifier = Modifier.size(64.dp),
-                        imageVector = jobInfo.companyLogo,
+                        bitmap = jobInfo.companyLogo,
                         contentDescription = null
                     )
                     Text(
