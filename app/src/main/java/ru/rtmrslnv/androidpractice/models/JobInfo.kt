@@ -1,14 +1,23 @@
 package ru.rtmrslnv.androidpractice.models
 
-// https://himalayas.app/api
 data class JobInfo(
-    var id: Int,
-    var title: String,
-    var companyName: String,
-    var employmentType: String,
-    var minSalary: Int?,
-    var maxSalary: Int?,
-    var currency: String,
-    var description: String,
-    var companyLogoUrl: String?
+    val title: String,
+    val excerpt: String,
+    val companyName: String,
+    val companySlug: String,
+    val companyLogo: String?,
+    val employmentType: String?,
+    val minSalary: Double?,
+    val maxSalary: Double?,
+    val seniority: List<String> = emptyList(),
+    val currency: String?,
+    val locationRestrictions: List<String> = emptyList(),
+    val timezoneRestrictions: List<Double> = emptyList(),
+    val categories: List<String> = emptyList(),
+    val parentCategories: List<String> = emptyList(),
+    val description: String,
+    val pubDate: Long,
+    val expiryDate: Long,
+    val applicationLink: String,
+    val guid: String
 )
