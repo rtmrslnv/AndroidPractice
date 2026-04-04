@@ -31,29 +31,50 @@ import kotlin.collections.map
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
+import ru.rtmrslnv.androidpractice.models.SettingsModel
+import ru.rtmrslnv.androidpractice.models.SettingsRepository
+import ru.rtmrslnv.androidpractice.models.SortMode
 
 @HiltViewModel
-class JobInfoViewModel @Inject constructor(application: Application, private val jobInfoRepository: JobInfoRepository) : AndroidViewModel(application) {
-    val jobInfos = MutableLiveData<List<JobInfoUI>>(emptyList());
-    val error = mutableStateOf(false);
-    private val pageSize = 20;
-    private var offset = 0;
-    private var isLoading = false;
+class JobInfoViewModel @Inject constructor(application: Application, private val jobInfoRepository: JobInfoRepository, private val settingsRepository: SettingsRepository) : AndroidViewModel(application) {
+    val jobInfos = MutableLiveData<List<JobInfoUI>>(emptyList())
+    val error = mutableStateOf(false)
+    private var page = 1
+    private var isLoading = false
+    private var lastSettings = settingsRepository.load()
+
 
     init {
         loadJobs()
     }
 
-    fun loadJobs() { loadJobs(pageSize, offset) }
+    fun loadJobs() {
+        val currentSettings = settingsRepository.load()
+        if (currentSettings != lastSettings) {
+            page = 1
+            jobInfos.value = emptyList()
+        }
+        loadJobs(currentSettings, page)
+    }
 
-    private fun loadJobs(limit : Int, offset : Int) {
+    fun mustUpdate() : Boolean {
+        return settingsRepository.load() != lastSettings
+    }
+
+    fun save(jobInfo: JobInfoUI) {
+        viewModelScope.launch {
+            jobInfoRepository.save(jobInfo)
+        }
+    }
+
+    private fun loadJobs(searchSettings : SettingsModel, page : Int) {
         if (isLoading) {
             return
         }
         isLoading = true;
         viewModelScope.launch {
             try {
-                val resp = jobInfoRepository.getJobs(limit, offset)
+                val resp = jobInfoRepository.search(searchSettings.q, searchSettings.sortMode.value, page)
 
                 if (resp.isSuccessful)  {
                     val body = resp.body()
@@ -76,9 +97,10 @@ class JobInfoViewModel @Inject constructor(application: Application, private val
                                 logo
                             )
                         }
-                        this@JobInfoViewModel.offset = jobInfos.value.orEmpty().size;
+                        this@JobInfoViewModel.page += 1;
                         isLoading = false;
                         error.value = false;
+                        lastSettings = searchSettings
                     }
                 }
             } catch (e: Exception) {

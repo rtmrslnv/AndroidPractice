@@ -8,5 +8,15 @@ import ru.rtmrslnv.androidpractice.models.JobsApiResponse
 
 interface JobService {
     @GET("jobs/api")
-    suspend fun getJobs(@Query("limit") limit : Int, @Query("offset") offset : Int) : Response<JobsApiResponse>
+    suspend fun getJobs(
+        @Query("limit") limit : Int,
+        @Query("offset") offset : Int
+    ) : Response<JobsApiResponse>
+
+    @GET("jobs/api/search")
+    suspend fun search(
+        @Query("q") q : String,
+        @Query("sort") sort : String,
+        @Query("page") page : Int
+    ) : Response<JobsApiResponse>
 }
