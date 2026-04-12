@@ -9,6 +9,7 @@ import dagger.hilt.android.AndroidEntryPoint
 import ru.rtmrslnv.androidpractice.models.JobInfoRepository
 import ru.rtmrslnv.androidpractice.viewmodels.FavoritesViewModel
 import ru.rtmrslnv.androidpractice.viewmodels.JobInfoViewModel
+import ru.rtmrslnv.androidpractice.viewmodels.ProfileViewModel
 import ru.rtmrslnv.androidpractice.viewmodels.SettingsViewModel
 import ru.rtmrslnv.androidpractice.views.MainScreen
 
@@ -17,13 +18,16 @@ class MainActivity : ComponentActivity() {
     private val jobInfoViewModel by viewModels<JobInfoViewModel>()
     private val settingsViewModel by viewModels<SettingsViewModel>()
     private val favoritesViewModel by viewModels<FavoritesViewModel>()
-
+    private val profileViewModel by viewModels<ProfileViewModel>()
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         enableEdgeToEdge()
         setContent {
-            MainScreen(jobInfoViewModel, settingsViewModel, favoritesViewModel)
+            MainScreen(
+                jobInfoViewModel, settingsViewModel,
+                favoritesViewModel, profileViewModel
+            )
         }
     }
 }

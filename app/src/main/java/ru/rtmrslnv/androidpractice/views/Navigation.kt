@@ -36,10 +36,13 @@ import androidx.navigation.compose.rememberNavController
 import androidx.navigation.navArgument
 import ru.rtmrslnv.androidpractice.viewmodels.FavoritesViewModel
 import ru.rtmrslnv.androidpractice.viewmodels.JobInfoViewModel
+import ru.rtmrslnv.androidpractice.viewmodels.ProfileViewModel
 import ru.rtmrslnv.androidpractice.viewmodels.SettingsViewModel
 
 @Composable
-fun Navigation(navController: NavHostController, jobInfoViewModel: JobInfoViewModel, settingsViewModel: SettingsViewModel, favoritesViewModel: FavoritesViewModel) {
+fun Navigation(navController: NavHostController, jobInfoViewModel: JobInfoViewModel,
+               settingsViewModel: SettingsViewModel, favoritesViewModel: FavoritesViewModel,
+               profileViewModel: ProfileViewModel) {
     NavHost(navController = navController, startDestination = "main") {
         composable("main") {
             MainView(navController, jobInfoViewModel)
@@ -50,8 +53,11 @@ fun Navigation(navController: NavHostController, jobInfoViewModel: JobInfoViewMo
         composable("favorites") {
             FavoriesView(navController, favoritesViewModel)
         }
-        composable("route4") {
-            Text("Route 4", style = MaterialTheme.typography.titleLarge)
+        composable("profile") {
+            ProfileView(navController, profileViewModel)
+        }
+        composable("profileEdit") {
+            ProfileEditView(navController, profileViewModel)
         }
         composable(
             "details/{itemId}",
@@ -132,7 +138,8 @@ fun NavBar(
 }
 
 @Composable
-fun MainScreen(jobInfoViewModel: JobInfoViewModel, settingsViewModel: SettingsViewModel, favoritesViewModel: FavoritesViewModel) {
+fun MainScreen(jobInfoViewModel: JobInfoViewModel, settingsViewModel: SettingsViewModel,
+               favoritesViewModel: FavoritesViewModel, profileViewModel: ProfileViewModel) {
     val navController = rememberNavController()
     Scaffold(
         bottomBar = {
@@ -141,7 +148,7 @@ fun MainScreen(jobInfoViewModel: JobInfoViewModel, settingsViewModel: SettingsVi
                     NavItem("main", "Main", Icons.Default.Home, false),
                     NavItem("settings", "Settings", Icons.Default.Settings, !settingsViewModel.isDefault()),
                     NavItem("favorites", "Favorites", Icons.Default.Star, false),
-                    NavItem("route4", "WIP", Icons.Default.Search, false),
+                    NavItem("profile", "Profile", Icons.Default.Person, false),
                 ),
                 navController = navController,
                 onClick = {
@@ -154,7 +161,7 @@ fun MainScreen(jobInfoViewModel: JobInfoViewModel, settingsViewModel: SettingsVi
         }
     ) { innerPadding ->
         Box(modifier = Modifier.padding(innerPadding)) {
-            Navigation(navController, jobInfoViewModel, settingsViewModel, favoritesViewModel)
+            Navigation(navController, jobInfoViewModel, settingsViewModel, favoritesViewModel, profileViewModel)
         }
     }
 }
