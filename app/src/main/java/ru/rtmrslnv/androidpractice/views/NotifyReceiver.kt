@@ -15,7 +15,7 @@ import ru.rtmrslnv.androidpractice.R
 
 class NotifyReceiver : BroadcastReceiver() {
     override fun onReceive(context: Context, intent: Intent) {
-        val name = intent.getStringExtra("name") ?: "Пара"
+        val name = intent.getStringExtra("name") ?: ""
         val channelId = "fav_class_channel"
 
         val openIntent = Intent(context, MainActivity::class.java).apply {
