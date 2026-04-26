@@ -28,6 +28,7 @@ import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
+import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.livedata.observeAsState
 import androidx.compose.runtime.snapshotFlow
 import androidx.compose.ui.Alignment
@@ -47,7 +48,7 @@ import ru.rtmrslnv.androidpractice.viewmodels.JobInfoViewModel
 
 @Composable
 fun MainView(navController: NavController, jobInfoViewModel: JobInfoViewModel) {
-    val jobInfosState = jobInfoViewModel.jobInfos.observeAsState(emptyList());
+    val jobInfosState = jobInfoViewModel.jobInfos.collectAsState(emptyList());
     val jobInfos = jobInfosState.value
     val listState = rememberLazyListState()
     val error = jobInfoViewModel.error;

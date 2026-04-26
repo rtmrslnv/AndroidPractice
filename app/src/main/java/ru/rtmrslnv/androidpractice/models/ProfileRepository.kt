@@ -5,6 +5,8 @@ import android.content.Context
 import androidx.lifecycle.application
 import retrofit2.Response
 import ru.rtmrslnv.androidpractice.api.HimalayasService
+import java.time.LocalTime
+import java.time.format.DateTimeFormatter
 import javax.inject.Inject
 import javax.inject.Singleton
 
@@ -15,7 +17,9 @@ class ProfileRepository @Inject constructor(private val application: Application
         val name = prefs.getString("name", "") ?: ""
         val avatarUri = prefs.getString("avatarUrl", "") ?: ""
         val portfolioUrl = prefs.getString("portfolioUrl", "") ?: ""
-        return ProfileModel(name, avatarUri, portfolioUrl)
+        val favoriteClassTime = LocalTime.parse(prefs.getString("favoriteClassTime", "00:00"),
+            DateTimeFormatter.ofPattern("HH:mm"))
+        return ProfileModel(name, avatarUri, portfolioUrl, favoriteClassTime)
     }
 
     fun save(profile : ProfileModel) {
@@ -24,6 +28,7 @@ class ProfileRepository @Inject constructor(private val application: Application
             putString("name", profile.name)
             putString("avatarUri", profile.avatarUri)
             putString("portfolioUrl", profile.portfolioUrl)
+            putString("favoriteClassTime", profile.favoriteClassTime.format(DateTimeFormatter.ofPattern("HH:mm")))
             apply()
         }
     }

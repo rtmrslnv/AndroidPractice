@@ -1,10 +1,14 @@
 package ru.rtmrslnv.androidpractice.views
 
 import android.Manifest
+import android.app.AlarmManager
+import android.app.TimePickerDialog
 import android.content.Context
+import android.content.Intent
 import android.content.pm.PackageManager
 import android.net.Uri
 import android.os.Build
+import android.provider.Settings
 import android.widget.Toast
 import androidx.activity.compose.rememberLauncherForActivityResult
 import androidx.activity.result.PickVisualMediaRequest
@@ -23,6 +27,7 @@ import androidx.compose.foundation.text.KeyboardOptions
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.AccountCircle
 import androidx.compose.material.icons.filled.Check
+import androidx.compose.material.icons.filled.Settings
 import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.Button
 import androidx.compose.material3.ListItem
@@ -36,13 +41,19 @@ import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.saveable.rememberSaveable
+import androidx.compose.runtime.getValue
+import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.platform.LocalContext
+import androidx.compose.ui.text.input.ImeAction
 import androidx.compose.ui.text.input.KeyboardType
 import androidx.compose.ui.unit.dp
+import androidx.compose.ui.text.input.KeyboardCapitalization
+import androidx.compose.material3.Icon
+import androidx.compose.material3.IconButton
 import androidx.core.content.ContextCompat
 import androidx.core.content.FileProvider
 import androidx.navigation.NavController
@@ -51,6 +62,8 @@ import ru.rtmrslnv.androidpractice.models.ProfileModel
 import ru.rtmrslnv.androidpractice.ui.theme.AndroidPracticeTheme
 import ru.rtmrslnv.androidpractice.viewmodels.ProfileViewModel
 import java.io.File
+import java.time.LocalTime
+import java.time.format.DateTimeFormatter
 
 @Composable
 fun ProfileEditView(navController: NavController, profileViewModel: ProfileViewModel) {
@@ -60,6 +73,9 @@ fun ProfileEditView(navController: NavController, profileViewModel: ProfileViewM
     val portfolioUrl = remember { mutableStateOf(profileViewModel.profile.value.portfolioUrl) }
     val showImagePicker = remember { mutableStateOf(false) }
 
+    val fmt = DateTimeFormatter.ofPattern("HH:mm")
+    val timeText = rememberSaveable { mutableStateOf(profileViewModel.profile.value.favoriteClassTime.format(fmt) ?: "") }
+    val timeError = remember { mutableStateOf<String?>(null) }
 
     val readPerm = if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU) {
         Manifest.permission.READ_MEDIA_IMAGES
@@ -67,6 +83,17 @@ fun ProfileEditView(navController: NavController, profileViewModel: ProfileViewM
         Manifest.permission.READ_EXTERNAL_STORAGE
     }
     val cameraPerm = Manifest.permission.CAMERA
+    val notifyPerm = Manifest.permission.POST_NOTIFICATIONS
+
+    val alarmManager = ctx.getSystemService(AlarmManager::class.java)
+    if (!alarmManager.canScheduleExactAlarms()) {
+        val intent = Intent(Settings.ACTION_REQUEST_SCHEDULE_EXACT_ALARM).apply {
+            data = Uri.parse("package:${ctx.packageName}")
+            flags = Intent.FLAG_ACTIVITY_NEW_TASK
+        }
+        ctx.startActivity(intent)
+    }
+
 
     val pickImage = rememberLauncherForActivityResult(ActivityResultContracts.PickVisualMedia()) { uri: Uri? ->
         uri?.let { avatarUriString.value = it.toString() }
@@ -84,7 +111,8 @@ fun ProfileEditView(navController: NavController, profileViewModel: ProfileViewM
     val permissionLauncher = rememberLauncherForActivityResult(ActivityResultContracts.RequestMultiplePermissions()) { perms ->
         val readGranted = perms[readPerm] == true
         val cameraGranted = perms[cameraPerm] == true
-        if (!readGranted || !cameraGranted) {
+        val notifyGranted = perms[notifyPerm] == true
+        if (!readGranted || !cameraGranted || !notifyGranted) {
             Toast.makeText(ctx, "Нужны разрешения для редактирования профиля", Toast.LENGTH_SHORT).show()
             navController.popBackStack()
         }
@@ -93,8 +121,9 @@ fun ProfileEditView(navController: NavController, profileViewModel: ProfileViewM
     LaunchedEffect(Unit) {
         val readOk = ContextCompat.checkSelfPermission(ctx, readPerm) == PackageManager.PERMISSION_GRANTED
         val camOk = ContextCompat.checkSelfPermission(ctx, cameraPerm) == PackageManager.PERMISSION_GRANTED
-        if (!readOk || !camOk) {
-            permissionLauncher.launch(arrayOf(readPerm, cameraPerm))
+        val notifyOk = ContextCompat.checkSelfPermission(ctx, notifyPerm) == PackageManager.PERMISSION_GRANTED
+        if (!readOk || !camOk || !notifyOk) {
+            permissionLauncher.launch(arrayOf(readPerm, cameraPerm, notifyPerm))
         }
     }
 
@@ -125,9 +154,28 @@ fun ProfileEditView(navController: NavController, profileViewModel: ProfileViewM
                     )
                     Button(
                         onClick = {
+                            if (timeText.value.isBlank()) {
+                                timeError.value = null
+                            } else {
+                                val ok = Regex("^([01]\\d|2[0-3]):[0-5]\\d\$").matches(timeText.value)
+                                if (!ok) {
+                                    timeError.value = "Введите время ЧЧ:мм"
+                                    return@Button
+                                }
+                            }
+
+                            val localTime = try {
+                                if (timeText.value.isBlank()) null else LocalTime.parse(timeText.value, fmt)
+                            } catch (e: Exception) {
+                                timeError.value = "Неверный формат"
+                                return@Button
+                            }
+
                             profileViewModel.profile.value =
-                                ProfileModel(name.value, avatarUriString.value ?: "", portfolioUrl.value)
+                                ProfileModel(name.value, avatarUriString.value ?: "", portfolioUrl.value, localTime ?: LocalTime.MIN)
+
                             profileViewModel.saveProfile()
+                            profileViewModel.scheduleFavoriteClassNotification(ctx)
                             navController.popBackStack()
                         }
                     ) {
@@ -171,7 +219,7 @@ fun ProfileEditView(navController: NavController, profileViewModel: ProfileViewM
                     singleLine = true,
                     colors = OutlinedTextFieldDefaults.colors(),
                     placeholder = { Text(text = "Имя", modifier = Modifier.fillMaxWidth()) },
-                    keyboardOptions = KeyboardOptions.Default.copy(keyboardType = KeyboardType.Text, autoCorrectEnabled = true)
+                    keyboardOptions = KeyboardOptions.Default.copy(keyboardType = KeyboardType.Text, capitalization = KeyboardCapitalization.Words)
                 )
 
                 OutlinedTextField(
@@ -184,8 +232,47 @@ fun ProfileEditView(navController: NavController, profileViewModel: ProfileViewM
                     singleLine = true,
                     colors = OutlinedTextFieldDefaults.colors(),
                     placeholder = { Text(text = "Ссылка на портфолио", modifier = Modifier.fillMaxWidth()) },
-                    keyboardOptions = KeyboardOptions.Default.copy(keyboardType = KeyboardType.Text, autoCorrectEnabled = true)
+                    keyboardOptions = KeyboardOptions.Default.copy(keyboardType = KeyboardType.Text)
                 )
+
+                OutlinedTextField(
+                    value = timeText.value,
+                    onValueChange = {
+                        timeText.value = it
+                        timeError.value = if (Regex("^([01]\\d|2[0-3]):[0-5]\\d\$").matches(it) || it.isBlank() ) null else "Введите время ЧЧ:мм"
+                    },
+                    modifier = Modifier.fillMaxWidth()
+                                        .padding(8.dp),
+                    label = { Text("Время любимой пары (ЧЧ:мм)") },
+                    isError = timeError.value != null,
+                    trailingIcon = {
+                        IconButton(onClick = {
+                            val now = java.util.Calendar.getInstance()
+                            TimePickerDialog(ctx,
+                                { _, hour, minute ->
+                                    val v = String.format("%02d:%02d", hour, minute)
+                                    timeText.value = v
+                                    timeError.value = null
+                                },
+                                now.get(java.util.Calendar.HOUR_OF_DAY),
+                                now.get(java.util.Calendar.MINUTE),
+                                true
+                            ).show()
+                        }) {
+                            Icon(imageVector = Icons.Default.Settings, contentDescription = "picker")
+                        }
+                    },
+                    keyboardOptions = KeyboardOptions.Default.copy(
+                        keyboardType = KeyboardType.Number,
+                        imeAction = ImeAction.Done
+                    ),
+                    shape = RoundedCornerShape(10.dp),
+                    singleLine = true,
+                    colors = OutlinedTextFieldDefaults.colors()
+                )
+                if (timeError.value != null) {
+                    Text(timeError.value!!, color = MaterialTheme.colorScheme.error, modifier = Modifier.padding(start = 12.dp))
+                }
             }
         }
 
