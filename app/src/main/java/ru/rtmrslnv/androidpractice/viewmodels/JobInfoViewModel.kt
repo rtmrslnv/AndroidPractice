@@ -2,14 +2,9 @@ package ru.rtmrslnv.androidpractice.viewmodels
 
 import android.app.Application
 import android.graphics.Bitmap
-import android.media.Image
-import android.util.Log
-import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.filled.AccountBox
 import androidx.compose.runtime.*
 import androidx.compose.ui.graphics.ImageBitmap
 import androidx.compose.ui.graphics.asImageBitmap
-import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import kotlinx.coroutines.launch
 import ru.rtmrslnv.androidpractice.models.JobInfoRepository
@@ -17,27 +12,20 @@ import ru.rtmrslnv.androidpractice.models.JobInfoUI
 import androidx.compose.ui.text.AnnotatedString
 import androidx.compose.ui.text.fromHtml
 import androidx.lifecycle.AndroidViewModel
-import androidx.lifecycle.LiveData
-import androidx.lifecycle.MutableLiveData
-import androidx.lifecycle.liveData
-import androidx.lifecycle.map
 import com.bumptech.glide.Glide
 import dagger.hilt.android.lifecycle.HiltViewModel
+import kotlinx.coroutines.CoroutineExceptionHandler
 import kotlinx.coroutines.withContext
 import ru.rtmrslnv.androidpractice.models.JobInfo
-import ru.rtmrslnv.androidpractice.models.JobsApiResponse
 import javax.inject.Inject
-import kotlin.collections.map
 import kotlinx.coroutines.Dispatchers
-import kotlinx.coroutines.launch
-import kotlinx.coroutines.withContext
+import kotlinx.coroutines.flow.MutableStateFlow
 import ru.rtmrslnv.androidpractice.models.SettingsModel
 import ru.rtmrslnv.androidpractice.models.SettingsRepository
-import ru.rtmrslnv.androidpractice.models.SortMode
 
 @HiltViewModel
 class JobInfoViewModel @Inject constructor(application: Application, private val jobInfoRepository: JobInfoRepository, private val settingsRepository: SettingsRepository) : AndroidViewModel(application) {
-    val jobInfos = MutableLiveData<List<JobInfoUI>>(emptyList())
+    val jobInfos = MutableStateFlow<List<JobInfoUI>>(emptyList())
     val error = mutableStateOf(false)
     private var page = 1
     private var isLoading = false
@@ -67,44 +55,52 @@ class JobInfoViewModel @Inject constructor(application: Application, private val
         }
     }
 
-    private fun loadJobs(searchSettings : SettingsModel, page : Int) {
+    private suspend fun mapJobInfosToUI(jobs: List<JobInfo>, startIndex: Int): List<JobInfoUI> {
+        return jobs.mapIndexed { idx, it ->
+            val hasSalary = it.minSalary != null
+            val salary = if (hasSalary) "${it.minSalary} - ${it.maxSalary} ${it.currency}" else "N/A"
+            var logo = ImageBitmap(1, 1)
+            if (!it.companyLogo.isNullOrEmpty()) {
+                logo = loadBitmap(it.companyLogo)?.asImageBitmap() ?: ImageBitmap(1, 1)
+            }
+            JobInfoUI(
+                startIndex + idx, it.title,
+                it.companyName,
+                it.employmentType ?: "N/A",
+                salary,
+                hasSalary,
+                it.currency ?: "N/A",
+                AnnotatedString.fromHtml(it.description),
+                logo
+            )
+        }
+    }
+
+    private fun loadJobs(searchSettings: SettingsModel, page: Int) {
         if (isLoading) {
             return
         }
-        isLoading = true;
-        viewModelScope.launch {
-            try {
-                val resp = jobInfoRepository.search(searchSettings.q, searchSettings.sortMode.value, page)
 
-                if (resp.isSuccessful)  {
-                    val body = resp.body()
-                    if (!body?.jobs.isNullOrEmpty()) {
-                        jobInfos.value = jobInfos.value.orEmpty() + body.jobs.mapIndexed { idx, it ->
-                            val hasSalary = it.minSalary != null
-                            val salary = if (hasSalary) "${it.minSalary} - ${it.maxSalary} ${it.currency}" else "N/A"
-                            var logo = ImageBitmap(1, 1)
-                            if (!it.companyLogo.isNullOrEmpty()) {
-                                logo = loadBitmap(it.companyLogo)?.asImageBitmap() ?: ImageBitmap(1, 1)
-                            }
-                            JobInfoUI(
-                                jobInfos.value.orEmpty().size + idx, it.title,
-                                it.companyName,
-                                it.employmentType ?: "N/A",
-                                salary,
-                                hasSalary,
-                                it.currency ?: "N/A",
-                                AnnotatedString.fromHtml(it.description),
-                                logo
-                            )
-                        }
-                        this@JobInfoViewModel.page += 1;
-                        isLoading = false;
-                        error.value = false;
-                        lastSettings = searchSettings
-                    }
+        isLoading = true
+
+        val exceptionHandler = CoroutineExceptionHandler { _, throwable ->
+            error.value = true
+            isLoading = false
+        }
+
+        viewModelScope.launch(exceptionHandler) {
+            val resp = jobInfoRepository.search(searchSettings.q, searchSettings.sortMode.value, page)
+
+            if (resp.isSuccessful) {
+                val body = resp.body()
+                if (!body?.jobs.isNullOrEmpty()) {
+                    val uiList = mapJobInfosToUI(body.jobs, jobInfos.value.size)
+                    jobInfos.value = jobInfos.value + uiList
+                    this@JobInfoViewModel.page += 1
+                    error.value = false
+                    lastSettings = searchSettings
+                    isLoading = false
                 }
-            } catch (e: Exception) {
-                error.value = true;
             }
         }
     }
