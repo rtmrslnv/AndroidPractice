@@ -13,6 +13,9 @@ import androidx.lifecycle.AndroidViewModel
 import javax.inject.Inject;
 
 import dagger.hilt.android.lifecycle.HiltViewModel;
+import kotlinx.coroutines.flow.MutableStateFlow
+import kotlinx.coroutines.flow.StateFlow
+import kotlinx.coroutines.flow.update
 import ru.rtmrslnv.androidpractice.models.ProfileModel
 import ru.rtmrslnv.androidpractice.models.ProfileRepository
 import ru.rtmrslnv.androidpractice.views.NotifyReceiver
@@ -21,14 +24,15 @@ import java.util.Calendar
 
 @HiltViewModel
 class ProfileViewModel @Inject constructor(application: Application, private val profileRepository: ProfileRepository) : AndroidViewModel(application) {
-    public val profile = mutableStateOf<ProfileModel>(ProfileModel("", "", "", LocalTime.MIN))
+    private val _profile = MutableStateFlow<ProfileModel>(ProfileModel("", "", "", LocalTime.MIN))
+    public val profile: StateFlow<ProfileModel> get() = _profile
 
     init {
         loadProfile()
     }
 
     private fun loadProfile() {
-        profile.value = profileRepository.load()
+        _profile.value = profileRepository.load()
     }
 
     fun saveProfile() {
@@ -64,4 +68,19 @@ class ProfileViewModel @Inject constructor(application: Application, private val
         am.setExactAndAllowWhileIdle(AlarmManager.RTC_WAKEUP, fire.timeInMillis, pending)
     }
 
+    fun updateName(name: String) {
+        _profile.update { it.copy(name = name) }
+    }
+
+    fun updateAvatarUri(uri: String) {
+        _profile.update { it.copy(avatarUri = uri) }
+    }
+
+    fun updatePortfolioUrl(portfolioUrl: String) {
+        _profile.update { it.copy(portfolioUrl = portfolioUrl) }
+    }
+
+    fun updateFavoriteClassTime(time: LocalTime) {
+        _profile.update { it.copy(favoriteClassTime = time) }
+    }
 }

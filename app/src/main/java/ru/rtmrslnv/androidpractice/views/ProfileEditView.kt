@@ -54,6 +54,8 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.text.input.KeyboardCapitalization
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
+import androidx.compose.runtime.collectAsState
+import androidx.compose.runtime.getValue
 import androidx.core.content.ContextCompat
 import androidx.core.content.FileProvider
 import androidx.navigation.NavController
@@ -68,9 +70,13 @@ import java.time.format.DateTimeFormatter
 @Composable
 fun ProfileEditView(navController: NavController, profileViewModel: ProfileViewModel) {
     val ctx = LocalContext.current
-    val name = remember { mutableStateOf(profileViewModel.profile.value.name) }
-    val avatarUriString = rememberSaveable { mutableStateOf(profileViewModel.profile.value.avatarUri) }
-    val portfolioUrl = remember { mutableStateOf(profileViewModel.profile.value.portfolioUrl) }
+    //val name = remember { mutableStateOf(profileViewModel.profile.value.name) }
+    //val avatarUriString = rememberSaveable { mutableStateOf(profileViewModel.profile.value.avatarUri) }
+    //val portfolioUrl = remember { mutableStateOf(profileViewModel.profile.value.portfolioUrl) }
+    val profile by profileViewModel.profile.collectAsState()
+    val name = profile.name
+    val avatarUriString = profile.avatarUri
+    val portfolioUrl = profile.portfolioUrl
     val showImagePicker = remember { mutableStateOf(false) }
 
     val fmt = DateTimeFormatter.ofPattern("HH:mm")
@@ -96,15 +102,15 @@ fun ProfileEditView(navController: NavController, profileViewModel: ProfileViewM
 
 
     val pickImage = rememberLauncherForActivityResult(ActivityResultContracts.PickVisualMedia()) { uri: Uri? ->
-        uri?.let { avatarUriString.value = it.toString() }
+        uri?.let { profileViewModel.updateAvatarUri(it.toString()) }
     }
 
     val takePictureLauncher = rememberLauncherForActivityResult(ActivityResultContracts.TakePicture()) { success ->
         if (!success) {
-            avatarUriString.value = ""
+            profileViewModel.updateAvatarUri("")
         }
         else {
-            avatarUriString.value = avatarUriString.value?.let { "$it?t=${System.currentTimeMillis()}" } ?: ""
+            profileViewModel.updateAvatarUri(avatarUriString?.let { "$it?t=${System.currentTimeMillis()}" } ?: "")
         }
     }
 
@@ -171,8 +177,8 @@ fun ProfileEditView(navController: NavController, profileViewModel: ProfileViewM
                                 return@Button
                             }
 
-                            profileViewModel.profile.value =
-                                ProfileModel(name.value, avatarUriString.value ?: "", portfolioUrl.value, localTime ?: LocalTime.MIN)
+                            //profileViewModel.profile.value =
+                            //    ProfileModel(name, avatarUriString ?: "", portfolioUrl, localTime ?: LocalTime.MIN)
 
                             profileViewModel.saveProfile()
                             profileViewModel.scheduleFavoriteClassNotification(ctx)
@@ -186,7 +192,7 @@ fun ProfileEditView(navController: NavController, profileViewModel: ProfileViewM
                     }
                 }
 
-                val avatarUri = avatarUriString.value.takeIf { it.isNotEmpty() }?.let { Uri.parse(it) }
+                val avatarUri = avatarUriString.takeIf { it.isNotEmpty() }?.let { Uri.parse(it) }
 
                 if (avatarUri == null) {
                     Image(
@@ -210,11 +216,11 @@ fun ProfileEditView(navController: NavController, profileViewModel: ProfileViewM
                 }
 
                 OutlinedTextField(
-                    value = name.value,
+                    value = name,
                     modifier = Modifier
                         .fillMaxWidth()
                         .padding(8.dp),
-                    onValueChange = { name.value = it },
+                    onValueChange = { profileViewModel.updateName(it) },
                     shape = RoundedCornerShape(10.dp),
                     singleLine = true,
                     colors = OutlinedTextFieldDefaults.colors(),
@@ -223,11 +229,11 @@ fun ProfileEditView(navController: NavController, profileViewModel: ProfileViewM
                 )
 
                 OutlinedTextField(
-                    value = portfolioUrl.value,
+                    value = portfolioUrl,
                     modifier = Modifier
                         .fillMaxWidth()
                         .padding(8.dp),
-                    onValueChange = { portfolioUrl.value = it },
+                    onValueChange = { profileViewModel.updatePortfolioUrl(it) },
                     shape = RoundedCornerShape(10.dp),
                     singleLine = true,
                     colors = OutlinedTextFieldDefaults.colors(),
@@ -287,7 +293,7 @@ fun ProfileEditView(navController: NavController, profileViewModel: ProfileViewM
                     }
                     val uri = createImageFileUri(ctx)
                     takePictureLauncher.launch(uri)
-                    avatarUriString.value = uri.toString()
+                    profileViewModel.updateAvatarUri(uri.toString())
                     showImagePicker.value = false
                 },
                 onGalleryClick = {
