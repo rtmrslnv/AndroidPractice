@@ -18,6 +18,8 @@ import androidx.compose.material3.Scaffold
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextField
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.collectAsState
+import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.ui.Modifier
@@ -31,8 +33,9 @@ import ru.rtmrslnv.androidpractice.viewmodels.SettingsViewModel
 
 @Composable
 fun SettingsView(navController: NavController, settingsViewModel: SettingsViewModel) {
-    val searchQuery = remember { mutableStateOf(settingsViewModel.settings.value.q) }
-    val sortMode = remember { mutableStateOf(settingsViewModel.settings.value.sortMode) }
+    val settingsState by settingsViewModel.settings.collectAsState()
+    val q = settingsState.q
+    val sortMode = settingsState.sortMode;
     val expanded = remember { mutableStateOf(false) }
     AndroidPracticeTheme() {
         Scaffold(modifier = Modifier.fillMaxWidth()) { padding ->
@@ -40,9 +43,9 @@ fun SettingsView(navController: NavController, settingsViewModel: SettingsViewMo
                 .padding(8.dp)
             ) {
                 OutlinedTextField(
-                    value = searchQuery.value,
+                    value = q,
                     modifier = Modifier.fillMaxWidth(),
-                    onValueChange = { searchQuery.value = it },
+                    onValueChange = { settingsViewModel.updateQuery(it) },
                     shape = RoundedCornerShape(10.dp),
                     singleLine = true,
                     colors = OutlinedTextFieldDefaults.colors(),
@@ -67,7 +70,7 @@ fun SettingsView(navController: NavController, settingsViewModel: SettingsViewMo
                     )
 
                     Text(
-                        text = sortMode.value.russianName
+                        text = settingsState.sortMode.russianName
                     )
 
                     DropdownMenu(
@@ -78,7 +81,7 @@ fun SettingsView(navController: NavController, settingsViewModel: SettingsViewMo
                             DropdownMenuItem(
                                 text = { Text(text = it.russianName) },
                                 onClick = {
-                                    sortMode.value = it
+                                    settingsViewModel.updateSortMode(it)
                                     expanded.value = false
                                 }
                             )
@@ -88,7 +91,8 @@ fun SettingsView(navController: NavController, settingsViewModel: SettingsViewMo
 
                 Button(
                     onClick = {
-                        settingsViewModel.settings.value = SettingsModel(searchQuery.value, sortMode.value)
+                        settingsViewModel.updateQuery(q)
+                        settingsViewModel.updateSortMode(sortMode)
                         settingsViewModel.saveSettings()
                     }
                 ) {
@@ -97,9 +101,7 @@ fun SettingsView(navController: NavController, settingsViewModel: SettingsViewMo
 
                 Button(
                     onClick = {
-                        searchQuery.value = ""
-                        sortMode.value = SortMode.RELEVANT
-                        settingsViewModel.settings.value = SettingsModel(searchQuery.value, sortMode.value)
+                        settingsViewModel.reset()
                         settingsViewModel.saveSettings()
                     }
                 ) {

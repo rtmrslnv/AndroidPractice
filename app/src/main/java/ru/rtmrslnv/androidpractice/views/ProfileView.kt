@@ -36,6 +36,8 @@ import android.content.IntentFilter
 import android.os.Build
 import android.webkit.MimeTypeMap
 import android.widget.Toast
+import androidx.compose.runtime.collectAsState
+import androidx.compose.runtime.getValue
 import androidx.compose.ui.platform.LocalContext
 import androidx.core.content.ContextCompat
 import java.time.format.DateTimeFormatter
@@ -43,9 +45,10 @@ import java.time.format.DateTimeFormatter
 
 @Composable
 fun ProfileView(navController: NavController, profileViewModel: ProfileViewModel) {
-    val name = remember { mutableStateOf(profileViewModel.profile.value.name) }
-    val avatarUriString = remember { mutableStateOf(profileViewModel.profile.value.avatarUri) }
-    val portfolioUrl = remember { mutableStateOf(profileViewModel.profile.value.portfolioUrl) }
+    val profile by profileViewModel.profile.collectAsState()
+    val name = profile.name
+    val avatarUriString = profile.avatarUri
+    val portfolioUrl = profile.portfolioUrl
     val ctx = LocalContext.current
 
     AndroidPracticeTheme() {
@@ -73,8 +76,8 @@ fun ProfileView(navController: NavController, profileViewModel: ProfileViewModel
                     }
                 }
 
-                val avatarUri = avatarUriString.value.takeIf { it.isNotEmpty() }
-                                                    ?.let { Uri.parse(it) }
+                val avatarUri = avatarUriString.takeIf { it.isNotEmpty() }
+                                                ?.let { Uri.parse(it) }
 
                 if (avatarUri == null) {
                     Image(
@@ -97,11 +100,11 @@ fun ProfileView(navController: NavController, profileViewModel: ProfileViewModel
 
                 Text(
                     modifier = Modifier.padding(top = 16.dp),
-                    text = name.value.ifEmpty { "N/A" },
+                    text = name.ifEmpty { "N/A" },
                     style = MaterialTheme.typography.titleLarge
                 )
                 Button(
-                    onClick = { downloadAndOpen(ctx, portfolioUrl.value) }
+                    onClick = { downloadAndOpen(ctx, portfolioUrl) }
                 ) {
                     Text(
                         text = "Портфолио",
